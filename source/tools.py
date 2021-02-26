@@ -5,11 +5,21 @@ import random
 import os
 
 class Game:
-    def __init__(self):
+    def __init__(self, state_dict, start_state):
         self.screen = pygame.display.get_surface()
         self.clock = pygame.time.Clock()
+        self.keys = pygame.key.get_pressed()
+        self.state_dict = state_dict
+        self.state = self.state_dict[start_state]
 
-    def run(self, state):
+    def update(self):
+        if self.state.finished:
+            next_state = self.state.next
+            self.state.finished = False
+            self.state = self.state_dict[next_state]
+        self.state.update(self.screen, self.keys)
+
+    def run(self):
         while True:
           for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -19,7 +29,8 @@ class Game:
             elif event.type == pygame.KEYUP:
                self.keys = pygame.key.get_pressed()
 
-          state.update(self.screen)
+          self.update()
+
           pygame.display.update()
           self.clock.tick(60) # 游戏帧数
 
