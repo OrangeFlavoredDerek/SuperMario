@@ -1,6 +1,7 @@
 import pygame
 from .. import constants as C
 from . import coin
+from .. import tools, setup
 pygame.font.init()
 
 class Info:
@@ -21,6 +22,7 @@ class Info:
             self.state_labels.append( (self.create_label( 'WORLD' ), (280, 200)) )
             self.state_labels.append( (self.create_label( '1 - 1' ), (430, 200)) )
             self.state_labels.append( (self.create_label( 'X   3' ), (380, 280)) )
+            self.player_image = tools.get_image(setup.GRAPHICS['mario_bros'], 178, 32, 12, 16, (0,0,0), C.BG_MULTI)
 
     def create_info_labels(self):
         self.info_lables = []
@@ -48,3 +50,5 @@ class Info:
         for lable in self.info_lables:
             surface.blit(lable[0], lable[1])
         surface.blit(self.flash_coin.image, self.flash_coin.rect)
+        if self.state == 'load_screen':
+            surface.blit(self.player_image, (300, 270))

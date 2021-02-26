@@ -18,4 +18,4 @@ class LoadScreen:
 
     def draw(self, surface):
         surface.fill((0, 0, 0))
-        self.draw(surface)
+        self.info.draw(surface)
