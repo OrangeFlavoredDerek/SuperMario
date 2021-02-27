@@ -26,11 +26,11 @@ class MainMenu:
         self.caption = tools.get_image(setup.GRAPHICS['title_screen'], 1, 60, 176, 88, (255, 0, 220), C.BG_MULTI)
 
     def setup_player(self):
-        self.player_image = tools.get_image(setup.GRAPHICS['mario_bros'], 178, 32, 12, 16, (0,0,0), C.BG_MULTI)
+        self.player_image = tools.get_image(setup.GRAPHICS['mario_bros'], 178, 32, 12, 16, (0,0,0), C.PLAYER_MULTI)
 
     def setup_cursor(self):
         self.cursor = pygame.sprite.Sprite()
-        self.cursor.image = tools.get_image(setup.GRAPHICS['item_objects'], 24, 160, 8, 8, (0,0,0), C.BG_MULTI)
+        self.cursor.image = tools.get_image(setup.GRAPHICS['item_objects'], 24, 160, 8, 8, (0,0,0), C.PLAYER_MULTI)
         rect = self.cursor.image.get_rect()
         rect.x, rect.y = (220, 360)
         self.cursor.rect = rect

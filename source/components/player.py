@@ -1,4 +1,6 @@
 import pygame
+import json
+import os
 from .. import tools, setup
 from .. import constants as C
 
@@ -6,19 +8,40 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, name):
         pygame.sprite.Sprite.__init__(self)
         self.name = name
-        self.setup_state()
+        self.load_data()
+        self.setup_states()
         self.setup_velocities()
         self.setup_timers()
         self.load_images()
 
-    def setup_state(self):
+    def load_data(self):
+        file_name = self.name + '.json'
+        file_path = os.path.join('source/data/player', file_name)
+        with open(file_path) as f:
+            self.player_data = json.load(f)
+
+    def setup_states(self):
+        self.state = 'stand'
         self.face_right = True
         self.dead = False
         self.big = False
 
     def setup_velocities(self):
+        speed = self.player_data['speed']
         self.x_vel = 0
         self.y_vel = 0
+
+        self.max_walk_vel = speed['max_walk_speed']
+        self.max_run_vel = speed['max_run_speed']
+        self.max_y_vel = speed['max_y_velocity']
+        self.jump_vel = speed['jump_velocity']
+        self.walk_accel = speed['walk_accel']
+        self.run_accel = speed['run_accel']
+        self.turn_accel = speed['turn_accel']
+        self.gravity = C.GRAVITY
+
+        self.max_x_vel = self.max_walk_vel
+        self.x_accel = self.walk_accel
 
     def setup_timers(self):
         self.walking_timer = 0
@@ -26,29 +49,46 @@ class Player(pygame.sprite.Sprite):
 
     def load_images(self):
         sheet = setup.GRAPHICS['mario_bros']
-        self.right_frames = []
-        self.left_frames = []
-        self.up_frames = []
-        self.down_frames = []
+        # frame_rects = self.player_data['image_frames']
+        frame_rects = self.player_data['image_frames']
 
-        frame_rects = [
-            (178, 32, 12, 16),
-            (80, 32, 15, 16),
-            (96, 32, 16, 16),
-            (112, 32, 16, 16)
+        self.right_small_normal_frames = []
+        self.right_big_normal_frames = []
+        self.right_big_fire_frames = []
+        self.left_small_normal_frames = []
+        self.left_big_normal_frames = []
+        self.left_big_fire_frames = []
+
+        self.small_normal_frames = [self.right_small_normal_frames, self.left_small_normal_frames]
+        self.big_normal_frames = [self.right_big_normal_frames, self.left_big_normal_frames]
+        self.big_fire_frames = [self.right_big_fire_frames, self.left_big_fire_frames]
+
+        self.all_frames = [
+            self.right_small_normal_frames,
+            self.right_big_normal_frames,
+            self.right_big_fire_frames,
+            self.left_small_normal_frames,
+            self.left_big_normal_frames,
+            self.left_big_fire_frames,
         ]
-        for frame_rect in frame_rects:
-            right_image = tools.get_image(sheet, *frame_rect, (0,0,0), C.BG_MULTI)
-            left_image = pygame.transform.flip(right_image, True, False)
-            up_image = pygame.transform.rotate(right_image, 90)
-            down_image = pygame.transform.rotate(right_image, -90)
-            self.right_frames.append(right_image)
-            self.left_frames.append(left_image)
-            self.up_frames.append(up_image)
-            self.down_frames.append(down_image)
 
-        self.frames = []
-        self.frames.append(tools.get_image(sheet, 178, 32, 12, 16, (0,0,0), C.BG_MULTI))
+        self.right_frames = self.right_small_normal_frames
+        self.left_frames = self.left_small_normal_frames
+
+        for group, group_frame_rects in frame_rects.items():
+            for frame_rect in group_frame_rects:
+                right_image = tools.get_image(sheet, frame_rect['x'], frame_rect['y'],
+                                              frame_rect['width'], frame_rect['height'], (0,0,0), C.BG_MULTI)
+                left_image = pygame.transform.flip(right_image, True, False)
+                if group == 'right_small_normal':
+                    self.right_small_normal_frames.append(right_image)
+                    self.left_small_normal_frames.append(left_image)
+                if group == 'right_big_normal':
+                    self.right_big_normal_frames.append(right_image)
+                    self.left_big_normal_frames.append(left_image)
+                if group == 'right_big_fire':
+                    self.right_big_fire_frames.append(right_image)
+                    self.left_big_fire_frames.append(left_image)
 
         self.frame_index = 0
         self.frames = self.right_frames
@@ -57,24 +97,86 @@ class Player(pygame.sprite.Sprite):
 
     def update(self, keys):
         self.current_timer = pygame.time.get_ticks()
+        self.handle_states(keys)
+
+    def handle_states(self, keys):
+        if self.state == 'stand':
+            self.stand(keys)
+        elif self.state == 'walk':
+            self.walk(keys)
+        elif self.state == 'jump':
+            self.jump(keys)
+        elif self.state == 'basketball':
+            self.play_basketball(keys)
+
+        if self.face_right:
+            self.image = self.right_frames[self.frame_index]
+        else:
+            self.image = self.left_frames[self.frame_index]
+
+# 站立
+    def stand(self, keys):
+        self.frame_index = 0
+        self.x_vel = 0
+        self.y_vel = 0
         if keys[pygame.K_RIGHT]:
-            self.x_vel = 5
-            self.y_vel = 0
-            self.frames = self.right_frames
-        if keys[pygame.K_LEFT]:
-            self.x_vel = -5
-            self.y_vel = 0
-            self.frames = self.left_frames
-        if keys[pygame.K_UP]:
-            self.x_vel = 0
-            self.y_vel = -5
-            self.frames = self.up_frames
-        if keys[pygame.K_DOWN]:
-            self.x_vel = 0
-            self.y_vel = 5
-            self.frames = self.down_frames
-        if self.current_timer - self.walking_timer > 100:
+            self.face_right = True
+            self.state = 'walk'
+        elif keys[pygame.K_LEFT]:
+            self.face_right = False
+            self.state = 'walk'
+
+# 行走/跑步
+    def walk(self, keys):
+        if keys[pygame.K_s]:
+            self.max_x_vel = self.max_run_vel
+            self.x_accel = self.run_accel
+        else:
+            self.max_x_vel = self.max_walk_vel
+            self.x_accel = self.walk_accel
+        if self.current_timer - self.walking_timer > self.calc_frame_duration():
+            if self.frame_index < 3:
+                self.frame_index += 1
+            else:
+                self.frame_index = 1
             self.walking_timer = self.current_timer
-            self.frame_index += 1
-            self.frame_index %= 4
-        self.image = self.frames[self.frame_index]
+        if keys[pygame.K_RIGHT]:
+            self.face_right = True
+            if self.x_vel < 0:
+                self.frame_index = 5
+                self.x_accel = self.turn_accel
+            self.x_vel = self.calc_vel(self.x_vel, self.x_accel, self.max_x_vel, True)
+        elif keys[pygame.K_LEFT]:
+            self.face_right = False
+            if self.x_vel > 0:
+                self.frame_index = 5
+                self.x_accel = self.turn_accel
+            self.x_vel = self.calc_vel(self.x_vel, self.x_accel, self.max_x_vel, False)
+        else:
+            if self.face_right:
+                self.x_vel -= self.x_accel
+                if self.x_vel < 0:
+                    self.x_vel = 0
+                    self.state = 'stand'
+            else:
+                self.x_vel += self.x_accel
+                if self.x_vel > 0:
+                    self.x_vel = 0
+                    self.state = 'stand'
+
+# 跳跃
+    def jump(self, keys):
+        pass
+
+    def play_basketball(self, keys):
+        pass
+
+    def calc_vel(self, vel, accel, max_vel, is_positive = True):
+        if is_positive:
+            return min(vel + accel, max_vel)
+        else:
+            return max(vel - accel, -max_vel)
+
+    def calc_frame_duration(self):
+        duration = -60 / self.max_run_vel * abs(self.x_vel) + 80
+        return duration
