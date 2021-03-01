@@ -9,10 +9,11 @@
 * 运行源码中的main()方法
 
 ## Preview
-* Game Ready
+* ### Game Ready
   
 ![main menu](https://github.com/OrangeFlavoredDerek/SuperMario/blob/master/resources/README_IMG/截圖%202021-02-27%2019.49.47.png)
-* Game Start
+* ### Game Start
+
 ![Start](https://github.com/OrangeFlavoredDerek/SuperMario/blob/master/resources/README_IMG/截圖%202021-02-27%2019.50.04.png)
 
 

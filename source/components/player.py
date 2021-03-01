@@ -25,6 +25,7 @@ class Player(pygame.sprite.Sprite):
         self.face_right = True
         self.dead = False
         self.big = False
+        self.can_jump = True
 
     def setup_velocities(self):
         speed = self.player_data['speed']
@@ -39,6 +40,7 @@ class Player(pygame.sprite.Sprite):
         self.run_accel = speed['run_accel']
         self.turn_accel = speed['turn_accel']
         self.gravity = C.GRAVITY
+        self.anti_gravity = C.ANTI_GRAVITY
 
         self.max_x_vel = self.max_walk_vel
         self.x_accel = self.walk_accel
@@ -100,12 +102,16 @@ class Player(pygame.sprite.Sprite):
         self.handle_states(keys)
 
     def handle_states(self, keys):
+        self.can_jump_or_not(keys)
+
         if self.state == 'stand':
             self.stand(keys)
         elif self.state == 'walk':
             self.walk(keys)
         elif self.state == 'jump':
             self.jump(keys)
+        elif self.state == 'fall':
+            self.fall(keys)
         elif self.state == 'basketball':
             self.play_basketball(keys)
 
@@ -113,6 +119,9 @@ class Player(pygame.sprite.Sprite):
             self.image = self.right_frames[self.frame_index]
         else:
             self.image = self.left_frames[self.frame_index]
+
+    def can_jump_or_not(self, keys):
+        self.can_jump = True
 
 # 站立
     def stand(self, keys):
@@ -125,6 +134,9 @@ class Player(pygame.sprite.Sprite):
         elif keys[pygame.K_LEFT]:
             self.face_right = False
             self.state = 'walk'
+        elif keys[pygame.K_a] and self.can_jump:
+            self.state = 'jump'
+            self.y_vel = self.jump_vel
 
 # 行走/跑步
     def walk(self, keys):
@@ -134,12 +146,18 @@ class Player(pygame.sprite.Sprite):
         else:
             self.max_x_vel = self.max_walk_vel
             self.x_accel = self.walk_accel
+
+        if keys[pygame.K_a] and self.can_jump:
+            self.state = 'jump'
+            self.y_vel = self.jump_vel
+
         if self.current_timer - self.walking_timer > self.calc_frame_duration():
             if self.frame_index < 3:
                 self.frame_index += 1
             else:
                 self.frame_index = 1
             self.walking_timer = self.current_timer
+
         if keys[pygame.K_RIGHT]:
             self.face_right = True
             if self.x_vel < 0:
@@ -166,7 +184,28 @@ class Player(pygame.sprite.Sprite):
 
 # 跳跃
     def jump(self, keys):
-        pass
+        self.frame_index = 4
+        self.y_vel += self.anti_gravity
+        self.can_jump = False
+
+        if self.y_vel >= 0:
+            self.state = 'fall'
+
+        if keys[pygame.K_RIGHT]:
+            self.x_vel = self.calc_vel(self.x_vel, self.x_accel, self.max_x_vel, True)
+        elif keys[pygame.K_LEFT]:
+            self.x_vel = self.calc_vel(self.x_vel, self.x_accel, self.max_x_vel, False)
+
+        if not keys[pygame.K_a]:
+            self.state = 'fall'
+
+    def fall(self, keys):
+        self.y_vel = self.calc_vel(self.y_vel, self.gravity, self.max_y_vel)
+
+        if keys[pygame.K_RIGHT]:
+            self.x_vel = self.calc_vel(self.x_vel, self.x_accel, self.max_x_vel, True)
+        elif keys[pygame.K_LEFT]:
+            self.x_vel = self.calc_vel(self.x_vel, self.x_accel, self.max_x_vel, False)
 
     def play_basketball(self, keys):
         pass
