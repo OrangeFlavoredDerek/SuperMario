@@ -9,10 +9,11 @@ from .. import constants as C
 from .. components import player, stuff
 
 class Level:
-    def __init__(self):
+    def start(self, game_info):
+        self.game_info = game_info
         self.finished = False
-        self.next = None
-        self.info = info.Info('level')
+        self.next = 'game_over'
+        self.info = info.Info('level', self.game_info)
         self.load_map_data()
         self.setup_background()
         self.setup_start_position()
@@ -53,9 +54,19 @@ class Level:
                 self.ground_items_group.add(stuff.Item(item['x'], item['y'], item['width'], item['height'], name))
 
     def update(self, surface, keys):
+        self.current_time = pygame.time.get_ticks()
         self.player.update(keys)
-        self.update_player_position()
-        self.update_game_window()
+
+        if self.player.dead:
+            if self.current_time - self.player.death_timer > 3000:
+                self.finished = True
+                self.update_game_info()
+        else:
+            self.update_player_position()
+            self.check_if_go_die()
+            self.update_game_window()
+            self.info.update()
+
         self.draw(surface)
 
     def update_player_position(self):
@@ -121,3 +132,15 @@ class Level:
         self.game_ground.blit(self.player.image, self.player.rect)
         surface.blit(self.game_ground, (0,0), self.game_window)
         self.info.draw(surface)
+
+    def check_if_go_die(self):
+        if self.player.rect.y > C.SCREEN_H:
+            self.player.go_die()
+
+    def update_game_info(self):
+        if self.player.dead:
+            self.game_info['lives'] -= 1
+        if self.game_info['lives'] == 0:
+            self.next = 'game_over'
+        else:
+            self.next = 'load_screen'

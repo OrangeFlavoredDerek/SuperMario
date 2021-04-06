@@ -48,6 +48,7 @@ class Player(pygame.sprite.Sprite):
     def setup_timers(self):
         self.walking_timer = 0
         self.transition_timer = 0
+        self.death_timer = 0
 
     def load_images(self):
         sheet = setup.GRAPHICS['mario_bros']
@@ -112,8 +113,8 @@ class Player(pygame.sprite.Sprite):
             self.jump(keys)
         elif self.state == 'fall':
             self.fall(keys)
-        elif self.state == 'basketball':
-            self.play_basketball(keys)
+        elif self.state == 'die':
+            self.die(keys)
 
         if self.face_right:
             self.image = self.right_frames[self.frame_index]
@@ -207,8 +208,16 @@ class Player(pygame.sprite.Sprite):
         elif keys[pygame.K_LEFT]:
             self.x_vel = self.calc_vel(self.x_vel, self.x_accel, self.max_x_vel, False)
 
-    def play_basketball(self, keys):
-        pass
+    def die(self, keys):
+        self.rect.y += self.y_vel
+        self.y_vel += self.anti_gravity
+
+    def go_die(self):
+        self.dead = True
+        self.y_vel = self.jump_vel
+        self.frame_index = 6
+        self.state = 'die'
+        self.death_timer = self.current_timer
 
     def calc_vel(self, vel, accel, max_vel, is_positive = True):
         if is_positive:

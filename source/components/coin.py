@@ -17,8 +17,8 @@ class FlashingCoin(pygame.sprite.Sprite):
 
     def load_frames(self, frame_rects):
         sheet = setup.GRAPHICS['item_objects']
-        for frame_rects in frame_rects:
-            self.frames.append(tools.get_image(sheet, *frame_rects, (0,0,0), C.BG_MULTI))
+        for frame_rect in frame_rects:
+            self.frames.append(tools.get_image(sheet, *frame_rect, (0,0,0), C.BG_MULTI))
 
     def update(self):
         self.current_time = pygame.time.get_ticks()
